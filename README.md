@@ -1,2 +1,2 @@
-# data-automation
-A script that automates repetitive data entry tasks
+## Data Entry: Automated
+This script automates event-logging for the SNAP-Ed program onto its online reporting system.
