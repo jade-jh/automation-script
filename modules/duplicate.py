@@ -16,7 +16,7 @@ def main():
     driver = webdriver.Chrome(service = service)
     driver.maximize_window() # For clarity
 
-    # Navigate to pears.io
+    # Navigate to URL
     driver.get("https://database-example.com")
 
     # Log in with credentials
