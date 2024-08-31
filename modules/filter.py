@@ -14,7 +14,7 @@ def main():
     wb = load_workbook("data/test.xlsx")
     sheet = wb.active
 
-    # Navigate to pears.io
+    # Navigate to URL
     driver.get("https://database-example.com")
 
     # Log in with credentials
