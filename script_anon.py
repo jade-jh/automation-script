@@ -81,7 +81,7 @@ def show_gui(resume_event, network):
         root.title("Network(s) Reached")
         prompt = tk.Label(root, text="Please select the\n"+network+" network.")
     else:
-        root.title("Parternership Type")
+        root.title("Partnership Type")
         prompt = tk.Label(root, text="Please enter this\npartnership's type.")
     prompt.pack(padx=10, pady=5)
     resume = tk.Button(root, text="I'm done", command=lambda: (resume_event.set(), root.withdraw(), root.destroy()))
