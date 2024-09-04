@@ -47,13 +47,13 @@ def save_and_continue(submit):
     """
     initial_url = driver.current_url
     driver.execute_script("arguments[0].scrollIntoView(true);", submit)
-    sleep(1) # Scrolls until the 'Save and Continue' button enters the viewport
+    sleep(1) # Scrolls until the submit button enters the viewport
     submit.click()
     WebDriverWait(driver, 5).until(EC.url_changes(initial_url)) # Check successful submission
 
-def show_gui(resume_event, network):
+def show_gui(resume_event, crossover):
     """
-    Displays a Tkinter GUI to allow user control over manual input of partnership type/network.
+    Displays a Tkinter GUI to allow user control over manual input.
 
     Parameters
     ----------
@@ -78,11 +78,11 @@ def show_gui(resume_event, network):
 
     # Create title, label, and button for GUI window
     if network:
-        root.title("Network(s) Reached")
-        prompt = tk.Label(root, text="Please select the\n"+network+" network.")
+        root.title("Crossovers")
+        prompt = tk.Label(root, text="Please select the\n" + crossover + " collaboration.")
     else:
-        root.title("Partnership Type")
-        prompt = tk.Label(root, text="Please enter this\npartnership's type.")
+        root.title("Partnership")
+        prompt = tk.Label(root, text="Please enter the\partnered organization.")
     prompt.pack(padx=10, pady=5)
     resume = tk.Button(root, text="I'm done", command=lambda: (resume_event.set(), root.withdraw(), root.destroy()))
     resume.pack(pady=10)
@@ -94,7 +94,7 @@ def main():
     """
     Entry point of the script.
 
-    Logs a series of partnerships provided by an Excel file.
+    Logs a series of data entries provided by an Excel file.
 
     Parameters
     ----------
@@ -135,114 +135,107 @@ def main():
 
     # Data entry
     for row in sheet.iter_rows(min_row=2):
-        # Navigate to "Partnerships" tab
-        driver.get("https://database-example/partnerships/")
+        # Navigate to "Entries" tab
+        driver.get("https://database-example/entries/")
 
-        # Retrieve partnership name from data file
+        # Retrieve name from data file
         name = row[0].value
 
         # Remove filter for user-created entries
         filter = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
             (By.ID, 'filter-dropdown-Created By')))
         if not "Created By" in filter.text:
-            driver.find_element(By.XPATH, "//*[@id='filter-dropdown-Created By']/span").click()
+            driver.find_element(By.XPATH, "[XPATH]").click()
 
-        # Search for partnership name
+        # Search for name
         search = driver.find_element(By.CLASS_NAME, "c-search__input")
         search.clear()
         search.send_keys(name)
 
         # Check for potential duplicates
         try:
-            add_partnership = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
-                (By.XPATH, "//*[@id='app']/div/div/div[2]/div[2]/div[2]/p/p/a")))
-            add_partnership.click()
+            add_entry = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
+                (By.XPATH, "[XPATH]")))
+            add_entry.click()
         except TimeoutException:
             duplicates.append(name)
             row[0].fill = yellow_fill # Mark entry as potential duplicate for user review
             continue
 
-        # Begin "General Information"
+        # Begin general information section
         try:
-            # Enter partnership name
+            # Enter name, plan, location data
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "id_name"))).send_keys(name)
 
-            # Enter action plan
-            action_plan = row[3].value
-            ap_prompt = driver.find_element(By.XPATH, "//*[@id='div_id_action_plan']/span")
-            scroll(ap_prompt)
-            ap_prompt.click()
+            plan = row[3].value
+            plan_prompt = driver.find_element(By.XPATH, "[XPATH]")
+            scroll(plan_prompt)
+            plan_prompt.click()
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                (By.XPATH, "//li[contains(.,'" + action_plan + "')]"))).click()
+                (By.XPATH, "//li[contains(.,'" + plan + "')]"))).click()
 
-            # Enter partnership site by ID
             site = row[5].value
-            driver.find_element(By.XPATH, "//*[@id='div_id_site']/span").click()
-            driver.find_element(By.XPATH, "/html/body/span/span/span[1]/input").send_keys(site)
+            driver.find_element(By.XPATH, "[XPATH]").click()
+            driver.find_element(By.XPATH, "[XPATH]").send_keys(site)
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//li[contains(.,'ID: " + str(site) + "')]"))).click()
 
-            # Enter partnership unit
             unit = row[4].value
-            driver.find_element(By.XPATH, "//*[@id='div_id_unit']/span").click()
-            driver.find_element(By.XPATH, "/html/body/span/span/span[1]/input").send_keys(unit)
+            driver.find_element(By.XPATH, "[XPATH]").click()
+            driver.find_element(By.XPATH, "[XPATH]").send_keys(unit)
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//li[contains(.,'" + unit + "')]"))).click()
 
-            # Enter jurisdiction level (CONSTANT)
-            driver.find_element(By.XPATH, "//*[@id='div_id_jurisdiction_level']/span").click()
+            driver.find_element(By.XPATH, "[XPATH]").click()
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//li[contains(.,'Local')]"))).click()
 
-            # Enter partnership type (with user input)
+            # Enter partnered organization (with user input)
             resume_event = threading.Event()
             show_gui(resume_event, "")
             sleep(1) # Buffer after button click
 
-            # Enter assistance received
-            assistance_received = re.sub(r'\s*\(.*?\)', "", row[12].value).strip().split(",") # Clean string
-            assistance_received = [assist.strip() for assist in assistance_received] # Eliminate whitespace
-            ar_prompt = driver.find_element(By.XPATH, "//*[@id='div_id_assistance_received']/span")
-            scroll(ar_prompt)
-            ar_prompt.click()
-            enter_ar = driver.find_element(By.XPATH, "//*[@id='div_id_assistance_received']/span/span[1]/span/ul/li/input")
-            for assist in assistance_received:
-                enter_ar.send_keys(assist)
+            # Enter support received/offered
+            received = re.sub(r'\s*\(.*?\)', "", row[12].value).strip().split(",") # Clean string
+            received = [support.strip() for support in received] # Eliminate whitespace
+            received_prompt = driver.find_element(By.XPATH, "[XPATH]")
+            scroll(received_prompt)
+            received_prompt.click()
+            enter_received = driver.find_element(By.XPATH, "[XPATH]")
+            for support in received:
+                enter_received.send_keys(support)
                 WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                    (By.XPATH, "//li[contains(.,'" + assist + "')]"))).click()
+                    (By.XPATH, "//li[contains(.,'" + support + "')]"))).click()
 
-            # Enter assistance provided
-            assistance_provided = re.sub(r'\s*\(.*?\)', "", row[13].value).strip().split(",") # Clean string
-            assistance_provided = [assist.strip() for assist in assistance_provided] # Eliminate whitespace
-            driver.find_element(By.XPATH, "//*[@id='div_id_assistance_provided']/span").click()
-            enter_ap = driver.find_element(By.XPATH, "//*[@id='div_id_assistance_provided']/span/span[1]/span/ul/li/input")
-            for assist in assistance_provided:
-                enter_ap.send_keys(assist)
+            offered = re.sub(r'\s*\(.*?\)', "", row[13].value).strip().split(",") # Clean string
+            offered = [support.strip() for support in offered] # Eliminate whitespace
+            driver.find_element(By.XPATH, "[XPATH]").click()
+            enter_offered = driver.find_element(By.XPATH, "[XPATH]")
+            for support in offered:
+                enter_offered.send_keys(support)
                 WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                    (By.XPATH, "//li[contains(.,'" + assist + "')]"))).click()
+                    (By.XPATH, "//li[contains(.,'" + support + "')]"))).click()
             
-            # Enter whether the partner received direct funding
+            # Enter additional information
             funding = row[14].value
-            funding_prompt = driver.find_element(By.XPATH, "//*[@id='div_id_is_snaped_funded']/span")
+            funding_prompt = driver.find_element(By.XPATH, "[XPATH]")
             scroll(funding_prompt)
             funding_prompt.click()
-            enter_funding = driver.find_element(By.XPATH, "/html/body/span/span/span[1]/input")
+            enter_funding = driver.find_element(By.XPATH, "[XPATH]")
             enter_funding.send_keys(funding)
             enter_funding.send_keys(Keys.ENTER) # For Element Click Intercepted Exception
 
-            # Enter relevant intervention types
-            direct_ed = row[15].value # Consider direct education alone
-            if direct_ed == 1:
+            intervention = row[15].value
+            if intervention == 1:
                 driver.find_element(By.ID, "id_intervention_types_0").click()
             
-            # Enter program activity comments
             comments = row[23].value
             if comments:
-                comments_prompt = driver.find_element(By.CSS_SELECTOR, "div.fr-element[contenteditable='true']")
+                comments_prompt = driver.find_element(By.CSS_SELECTOR, "[CSS_SELECTOR]")
                 driver.execute_script("arguments[0].innerHTML = arguments[1];", comments_prompt, comments)
 
-            # Submit "General Information"
-            submit_gen_info = driver.find_element(By.XPATH, "//*[@id='form_id']/button[1]")
+            # Submit page
+            submit_gen_info = driver.find_element(By.XPATH, "[XPATH]")
             save_and_continue(submit_gen_info)
         
         except Exception as e:
@@ -252,107 +245,99 @@ def main():
             continue
 
         try:
-            # Begin "Collaborators"
+            # Begin contributors section
             if row[16].value:
-                collaborators = [collab.strip() for collab in row[16].value.split(",")]
-                for collab in collaborators:
+                contributors = [collab.strip() for collab in row[16].value.split(",")]
+                for contributor in contributors:
                     WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                        (By.XPATH, "//*[@id='app']/div/div[2]/div[1]/div/div[1]/button"))).click()
+                        (By.XPATH, "[XPATH]"))).click()
                     enter_user = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                        (By.CSS_SELECTOR, "div.vs__selected-options input.vs__search")))
+                        (By.CSS_SELECTOR, "[CSS_SELECTOR]")))
                     enter_user.send_keys(collab)
                     WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                        (By.XPATH, "//span[contains(.,'" + collab + "')]"))).click()
-                    driver.find_element(By.XPATH, "//*[@id='id_Contributor']").click()
+                        (By.XPATH, "[XPATH]"))).click()
+                    driver.find_element(By.XPATH, "[XPATH]").click()
                     WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                        (By.CSS_SELECTOR, "#id_Access"))).click()
+                        (By.CSS_SELECTOR, "[CSS_SELECTOR]"))).click()
                     WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                        (By.XPATH, "//li[contains(.,'View & Edit')]"))).click() # CONSTANT
-                    driver.find_element(By.XPATH, "//*[@id='app']/div/div[2]/div[1]/div[2]/div/div/div/div[3]/button[1]").click()
+                        (By.XPATH, "[XPATH]"))).click() # CONSTANT
+                    driver.find_element(By.XPATH, "[XPATH]").click()
                 sleep(1) # Buffer to allow page to load
 
-            # Remove user as collaborator
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                (By.XPATH, "//*[@id='app']/div/div[2]/div[1]/div/div[2]/table/tbody/tr/td[5]/div/a[2]"))).click()
+                (By.XPATH, "[XPATH]"))).click()
             sleep(1) # Buffer to allow page to load
         
-            # Submit "Collaborators"
-            submit_collab = driver.find_element(By.XPATH, "//*[@id='main-content']/form/button[1]")
-            save_and_continue(submit_collab)
+            # Submit page
+            submit_contrib = driver.find_element(By.XPATH, "[XPATH]")
+            save_and_continue(submit_contrib)
 
-            # Begin "Custom Data"
-            # Enter grant goals
+            # Begin custom data section
             if not row[17].value: # Check if cell is empty
                 errors.append(name)
                 row[0].fill = orange_fill # Mark entry as incomplete for user review
                 continue
             goals = row[17].value.split(",")
             enter_goals = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                ((By.XPATH, "//*[@id='vs1__combobox']/div[1]/input"))))
+                ((By.XPATH, "[XPATH]"))))
             for goal in goals:
                 enter_goals.send_keys(goal)
                 WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                     (By.XPATH, "//li[contains(.,'" + goal + "')]"))).click()
 
-            # Enter network reached
-            network = row[8].value
+            # Enter crossover collaboration (with user input)
+            crossover = row[8].value
             resume_event = threading.Event() # Create event object for synchronization
-            show_gui(resume_event, network)
+            show_gui(resume_event, crossover)
             sleep(1) # Buffer after button click
 
-            # Enter special projects (CONSTANT)
-            projects = driver.find_element(By.XPATH, "//*[@id='vs3__combobox']/div[1]/input")
+            projects = driver.find_element(By.XPATH, "[XPATH]")
             driver.execute_script("arguments[0].scrollIntoView(true);", projects)
             sleep(1)
             projects.click()
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                (By.XPATH, "//li[contains(.,'None')]"))).click()
+                (By.XPATH, "[XPATH]"))).click()
 
-            # Submit "Custom Data"
-            submit_custom_data = driver.find_element(By.XPATH, "//*[@id='app']/div/div[2]/div[1]/div[2]/button[1]")
+            # Submit page
+            submit_custom_data = driver.find_element(By.XPATH, "[XPATH]")
             save_and_continue(submit_custom_data)
 
-            # Begin "Evaluation"
-            # Enter relationship depth
+            # Begin evaluation
             relationship = row[18].value
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                (By.XPATH, "//*[@id='div_id_relationship_depth']/span"))).click()
+                (By.XPATH, "[XPATH]"))).click()
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//li[contains(.,'" + relationship + "')]"))).click()
 
-            # Enter assessment tool (CONSTANT - Expecting "None")
             tool = row[19].value
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//*[@id='div_id_assessment_tool']/span"))).click()
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
                 (By.XPATH, "//li[contains(.,'" + tool + "')]"))).click()
             
-            # Enter partnership accomplishments
             accomplishment = row[20].value
             enter_accom = driver.find_element(By.ID, "id_accomplishments")
             scroll(enter_accom)
             enter_accom.send_keys(accomplishment)
 
-            # Enter lessons learned
             lessons = row[21].value
             enter_lessons = driver.find_element(By.ID, "id_lessons_learned")
             enter_lessons.send_keys(lessons)
 
-            # Submit "Evaluation"
-            submit_eval = driver.find_element(By.XPATH, "//*[@id='main-content']/div[2]/div[1]/form/button[1]")
+            # Submit page
+            submit_eval = driver.find_element(By.XPATH, "[XPATH]")
             save_and_continue(submit_eval)
 
-            # Begin "Meetings & Events"
-            # Enter meetings/events (CONSTANT)
+            # Enter meetings (CONSTANT)
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                (By.XPATH, "//*[@id='div_id_has_events']/span"))).click()
-            enter_me = driver.find_element(By.XPATH, "/html/body/span/span/span[1]/input")
-            enter_me.send_keys("No")
-            enter_me.send_keys(Keys.ENTER)
+                (By.XPATH, "[XPATH]"))).click()
+            enter_meetings = driver.find_element(By.XPATH, "[XPATH]")
+            enter_meetings.send_keys("No")
+            enter_meetings.send_keys(Keys.ENTER)
         
-            # Submit "Meetings & Events"
-            submit_meetings_events = driver.find_element(By.XPATH, "//*[@id='main-content']/div[2]/div[1]/form/button[1]")
-            save_and_continue(submit_meetings_events)
+            # Submit meetings
+            submit_meetings = driver.find_element(By.XPATH, "[XPATH]")
+            save_and_continue(submit_meetings)
         
         except Exception as e:
             errors.append(name)
@@ -362,7 +347,7 @@ def main():
 
     # Print out duplicates for reference
     if duplicates:
-        print("The following potential duplicate partnerships were not entered:")
+        print("The following potential duplicate entries were not entered:")
         for duplicate in duplicates:
             print(duplicate)
     
@@ -371,7 +356,7 @@ def main():
 
     # Print out errors for reference
     if errors:
-        print("One or more errors occurred while attempting to enter the following partnerships:")
+        print("One or more errors occurred while attempting to enter the following entries:")
         for error in errors:
             print(error)
 
